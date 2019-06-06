@@ -39,7 +39,7 @@ class HttpServer
 
     public function onWorkStart(Server $server, $workId)
     {
-        // 加载laravel框架
+        // 加载laravel框架引导文件
         define('LARAVEL_START', microtime(true));
         define('APP_DIR', '/var/www/laravel_swoole_test');
 
@@ -50,40 +50,50 @@ class HttpServer
     // 接受客户端请求
     public function onRequest($request, $response)
     {
+        // 超全局变量常驻内存 需要手动释放
+        $_SERVER = [];
         if (isset($request->server)) {
             foreach ($request->server as $key => $v) {
                 $_SERVER[strtoupper($key)] = $v;
             }
         }
 
+        $_GET = [];
         if (isset($request->get)) {
             foreach ($request->get as $key => $v) {
                 $_GET[$key] = $v;
             }
         }
 
+        $_POST = [];
         if (isset($request->post)) {
             foreach ($request->post as $key => $v) {
                 $_POST[$key] = $v;
             }
         }
 
-        ob_start();
-
         // 接受请求并响应
-        $app = $this->loadApplication();
-        $kernel = $app->make(Kernel::class);
+        try {
+            ob_start();
 
-        $resp = $kernel->handle(
-            $req = Request::capture()
-        );
+            $app = $this->loadApplication();
+            $kernel = $app->make(Kernel::class);
 
-        $resp->send();
-        $kernel->terminate($req, $resp);
+            $resp = $kernel->handle(
+                $req = Request::capture()
+            );
 
-        $returnContent = ob_get_contents();
-        ob_end_clean();
-        $response->end($returnContent);
+            $resp->send();
+            $kernel->terminate($req, $resp);
+
+            $returnContent = ob_get_contents();
+            ob_end_clean();
+            $response->end($returnContent);
+//            $this->serverInstance->close();
+
+        } catch (\Exception $e) {
+
+        }
     }
 
     public function run()

@@ -16,5 +16,7 @@ Route::get('/', function () {
 });
 
 Route::any('/test1', function(){
-    echo 123;
+    var_dump($_GET);
 });
+
+Route::any("/getTime", "TestController@getTime");
